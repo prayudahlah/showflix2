@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18.1-bookworm
+    container_name: showflix2-postgres
+    restart: on-failure:5
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+    volumes:
+      - /mnt/docker-data/showflix2/postgres:/var/lib/postgresql
