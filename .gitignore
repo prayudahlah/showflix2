@@ -3,3 +3,6 @@ data/
 
 # environment
 .env
+
+# datagrip
+.idea/
