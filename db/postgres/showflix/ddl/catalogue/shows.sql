@@ -20,8 +20,7 @@ CREATE TABLE IF NOT EXISTS catalogue.shows (
     tagline              TEXT,
     overview             TEXT,
     keywords             TEXT
-)
-    USING ???;
+);
 
 ALTER TABLE catalogue.shows
     OWNER TO showflixadmin;
