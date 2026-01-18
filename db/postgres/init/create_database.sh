@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+# data ingestion
+psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" <<-EOSQL
+    CREATE DATABASE staging;
+EOSQL
+
+# airflow metadata
+psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" <<-EOSQL
+    -- airflow database
+    CREATE DATABASE "${POSTGRES_AIRFLOW_DB}";
+
+    -- airflow user
+    CREATE USER "${POSTGRES_AIRFLOW_USER}" WITH ENCRYPTED PASSWORD '${POSTGRES_AIRFLOW_PASSWORD}';
+    GRANT ALL PRIVILEGES ON DATABASE "${POSTGRES_AIRFLOW_DB}" TO "${POSTGRES_AIRFLOW_USER}";
+
+    -- airflow public schema privilige
+    \c "${POSTGRES_AIRFLOW_DB}"
+    GRANT ALL PRIVILEGES ON SCHEMA public TO "${POSTGRES_AIRFLOW_USER}";
+    ALTER SCHEMA public OWNER TO "${POSTGRES_AIRFLOW_USER}";
+EOSQL
