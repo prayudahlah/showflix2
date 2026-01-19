@@ -1,0 +1,15 @@
+NULL_VALUES = [
+    "",
+    "None",
+    "N/A",
+    "N/A N/A",
+    "NA",
+    "-NaN",
+    "-nan",
+    "<NA>",
+    "NULL",
+    "NaN",
+    "n/a",
+    "nan",
+    "null",
+]
