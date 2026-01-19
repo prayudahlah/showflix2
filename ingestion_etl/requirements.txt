@@ -1,2 +1,4 @@
-polars
 apache-airflow-providers-fab
+polars
+adbc-driver-postgresql
+kagglehub
