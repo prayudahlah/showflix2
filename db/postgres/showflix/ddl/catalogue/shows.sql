@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS catalogue.shows (
-    show_id              SERIAL
+    show_id              INTEGER          NOT NULL
         PRIMARY KEY,
     title                TEXT,
     original_title       TEXT,
