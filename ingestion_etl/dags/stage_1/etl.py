@@ -92,7 +92,7 @@ def load_to_postgres(in_path: str, table_name: str = "staging.cleaned_tmdb"):
             pl.col("runtime").cast(pl.Int32),
             pl.col("language_name").alias("original_language"),
         )
-        .drop("id")
+        .drop("id", "language_name")
         .collect(engine="streaming")
     )
 
