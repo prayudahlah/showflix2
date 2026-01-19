@@ -28,7 +28,7 @@ def transform_data(in_path: str) -> str:
     logger.info("Starting data transformation")
     logger.info("Input path: %s", in_path)
 
-    language_map = pl.scan_csv("./language_code_mapping.csv")
+    language_map = pl.scan_csv("/opt/airflow/dags/stage_1/language_code_mapping.csv")
 
     # map to null, deduplication, language code mapping
     df = (
@@ -58,7 +58,7 @@ def transform_data(in_path: str) -> str:
     )
 
     # raise and return unmapped language if exists
-    if unmapped.height == 0:
+    if unmapped.height > 0:
         unmapped_dict = unmapped.to_dicts()
 
         logging.error(
