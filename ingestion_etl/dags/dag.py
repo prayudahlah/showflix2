@@ -1,11 +1,13 @@
 from airflow.sdk import dag, task
 import pendulum
 
-from stage_1.etl import extract_from_kaggle, clean_data, load_to_postgres
+from stage_1.etl import extract_from_kaggle, transform_data, load_to_postgres
 
 
 @dag(
     dag_id="etl_to_postgres",
+    max_active_runs=1,
+    max_active_tasks=10,
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Jakarta"),
     schedule="0 2 * * 0",
     catchup=False,
@@ -23,7 +25,7 @@ def data_ingestion():
 
     @task
     def transform_stage_1(in_path: str) -> str:
-        return clean_data(in_path)
+        return transform_data(in_path)
 
     @task
     def load_stage_1(in_path: str):
