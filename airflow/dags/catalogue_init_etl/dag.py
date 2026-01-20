@@ -1,11 +1,15 @@
 from airflow.sdk import dag, task
 import pendulum
 
-from stage_1.etl import extract_from_kaggle, transform_data, load_to_postgres
+from catalogue_init_etl.tasks import (
+    extract_from_kaggle,
+    transform_data,
+    load_to_postgres,
+)
 
 
 @dag(
-    dag_id="etl_to_postgres",
+    dag_id="catalogue_init_etl",
     max_active_runs=1,
     max_active_tasks=10,
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Jakarta"),
