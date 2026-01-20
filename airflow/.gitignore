@@ -2,6 +2,7 @@
 config/
 logs/
 plugins/
+tmp/
 __pycache__/
 test.py
 *.pyc

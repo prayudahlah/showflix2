@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import polars as pl
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_from_kaggle(
+    temp_dir: str,
     dataset_url: str = "asaniczka/tmdb-movies-dataset-2023-930k-movies",
     file_name: str = "TMDB_movie_dataset_v11.csv",
 ) -> str:
@@ -16,6 +18,7 @@ def extract_from_kaggle(
     logger.info("Dataset URL: %s", dataset_url)
     logger.info("Target file: %s", file_name)
 
+    os.environ["KAGGLEHUB_CACHE"] = temp_dir
     df_path = kagglehub.dataset_download(dataset_url, path=file_name)
 
     logger.info("Dataset downloaded successfully")
@@ -24,11 +27,11 @@ def extract_from_kaggle(
     return df_path
 
 
-def transform_data(in_path: str) -> str:
+def transform_data(in_path: str, temp_dir: str) -> str:
     logger.info("Starting data transformation")
     logger.info("Input path: %s", in_path)
 
-    language_map = pl.scan_csv("/opt/airflow/dags/stage_1/language_code_mapping.csv")
+    language_map = pl.scan_csv("./dags/catalogue_init_etl/language_code_mapping.csv")
 
     # map to null, deduplication, language code mapping
     df = (
@@ -70,7 +73,7 @@ def transform_data(in_path: str) -> str:
     logger.info("Row count after transform: %d", df.height)
     logger.info("Column count: %d", df.width)
 
-    out_path = "/tmp/transformed.parquet"
+    out_path = temp_dir
     df.write_parquet(out_path)
 
     logger.info("Data written to parquet")

@@ -1,5 +1,6 @@
 from airflow.sdk import dag, task
 import pendulum
+import os
 
 from catalogue_init_etl.tasks import (
     extract_from_kaggle,
@@ -15,7 +16,6 @@ from catalogue_init_etl.tasks import (
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Jakarta"),
     schedule="0 2 * * 0",
     catchup=False,
-    tags=["etl", "postgres", "ingestion"],
     default_args={
         "retries": 2,
         "retry_delay": pendulum.duration(minutes=5),
@@ -23,13 +23,16 @@ from catalogue_init_etl.tasks import (
     description="DAG for data ingestion ETL",
 )
 def data_ingestion():
+    dag_id = "catalogue_init_etl"
+    temp_dir = f"{os.getenv('AIRFLOW_TEMP_DIR')}/{dag_id}"
+
     @task
     def extract_stage_1() -> str:
-        return extract_from_kaggle()
+        return extract_from_kaggle(temp_dir)
 
     @task
     def transform_stage_1(in_path: str) -> str:
-        return transform_data(in_path)
+        return transform_data(temp_dir, in_path)
 
     @task
     def load_stage_1(in_path: str):
