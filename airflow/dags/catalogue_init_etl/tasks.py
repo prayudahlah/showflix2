@@ -3,7 +3,7 @@ import logging
 import polars as pl
 import kagglehub
 from airflow.sdk.bases.hook import BaseHook
-from stage_1.null_values import NULL_VALUES
+from catalogue_init_etl.null_values import NULL_VALUES
 
 logger = logging.getLogger(__name__)
 
