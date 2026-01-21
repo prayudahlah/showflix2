@@ -2,11 +2,7 @@ from airflow.sdk import dag, task
 import pendulum
 import os
 
-from catalogue_init_etl.tasks import (
-    extract_from_kaggle,
-    transform_data,
-    load_to_postgres,
-)
+import catalogue_init_etl.tasks as tasks
 
 
 @dag(
@@ -27,20 +23,25 @@ def data_ingestion():
     temp_dir = f"{os.getenv('AIRFLOW_TEMP_DIR')}/{dag_id}"
 
     @task
-    def extract_stage_1() -> str:
-        return extract_from_kaggle(temp_dir)
+    def extract() -> str:
+        return tasks.extract(temp_dir)
 
     @task
-    def transform_stage_1(in_path: str) -> str:
-        return transform_data(temp_dir, in_path)
+    def transform(in_path: str) -> str:
+        return tasks.transform(in_path, temp_dir)
 
     @task
-    def load_stage_1(in_path: str):
-        load_to_postgres(in_path)
+    def normalize(in_path: str) -> dict[str, str]:
+        return tasks.normalize(in_path, temp_dir)
 
-    extracted_path = extract_stage_1()
-    cleaned_path = transform_stage_1(extracted_path)
-    load_stage_1(cleaned_path)
+    @task
+    def load(in_paths: dict[str, str], extracted_path: str):
+        return tasks.load(in_paths, extracted_path, temp_dir)
+
+    extract_res = extract()
+    transform_res = transform(extract_res)
+    normalize_res = normalize(transform_res)
+    load(normalize_res, extract_res)
 
 
 data_ingestion()
