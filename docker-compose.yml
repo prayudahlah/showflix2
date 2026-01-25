@@ -144,6 +144,7 @@ services:
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
+    restart: no
     command:
       - -c
       - |
