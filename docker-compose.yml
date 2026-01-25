@@ -22,6 +22,8 @@ x-airflow-common: &airflow-common
   depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
+    garage:
+      condition: service_healthy
   restart: unless-stopped
 
 services:
@@ -49,6 +51,29 @@ services:
       retries: 5
       start_period: 5s
     restart: unless-stopped
+
+  garage:
+    image: dxflrs/garage:v2.2.0
+    restart: unless-stopped
+    ports:
+      - "3900:3900" # S3 API
+      - "3901:3901" # RPC (internal communication)
+      - "3902:3902" # S3 Web (static website hosting)
+      - "3903:3903" # Admin API
+    environment:
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      - GARAGE_METRICS_TOKEN=${GARAGE_METRICS_TOKEN}
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - ./garage/meta:/var/lib/garage/meta
+      - ./garage/data:/var/lib/garage/data
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   airflow-apiserver:
     <<: *airflow-common
