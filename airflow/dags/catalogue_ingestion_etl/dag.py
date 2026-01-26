@@ -1,16 +1,21 @@
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, chain, Variable
+from airflow.providers.standard.operators.empty import EmptyOperator
+from pathlib import Path
+import polars as pl
 import pendulum
-import os
+import logging
 
-import catalogue_init_etl.tasks as tasks
+from catalogue_ingestion_etl.utils import get_s3_storage_options, get_kaggle_dataset
+
+logger = logging.getLogger(__name__)
 
 
 @dag(
-    dag_id="catalogue_init_etl",
+    dag_id="catalogue_ingestion_etl",
     max_active_runs=1,
     max_active_tasks=10,
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Jakarta"),
-    schedule="0 2 * * 0",
+    schedule=None,
     catchup=False,
     default_args={
         "retries": 2,
@@ -18,30 +23,39 @@ import catalogue_init_etl.tasks as tasks
     },
     description="DAG for data ingestion ETL",
 )
-def data_ingestion():
-    dag_id = "catalogue_init_etl"
-    temp_dir = f"{os.getenv('AIRFLOW_TEMP_DIR')}/{dag_id}"
+def catalogue_ingestion_etl():
+    start = EmptyOperator(task_id="start")
 
     @task
-    def extract() -> str:
-        return tasks.extract(temp_dir)
+    def extract_from_kaggle(**context) -> str:
+        temp_dir = Path(Variable.get("AIRFLOW_TEMP_DIR", default="/opt/airflow/tmp"))
+        data_interval_start = context["data_interval_start"]
+        date_prefix = data_interval_start.strftime("year=%Y/month=%m/day=%d")
 
-    @task
-    def transform(in_path: str) -> str:
-        return tasks.transform(in_path, temp_dir)
+        with get_kaggle_dataset(temp_dir) as df_path:
+            try:
+                bucket = Variable.get("CATALOGUE_INGESTION_ETL_BUCKET")
+            except KeyError:
+                raise RuntimeError(
+                    "Airflow variable CATALOGUE_INGESTION_ETL_BUCKET needs to be set"
+                )
 
-    @task
-    def normalize(in_path: str) -> dict[str, str]:
-        return tasks.normalize(in_path, temp_dir)
+            s3_uri = f"s3://{bucket}/{date_prefix}/kaggle_dataset.parquet"
+            storage_options = get_s3_storage_options()
 
-    @task
-    def load(in_paths: dict[str, str], extracted_path: str):
-        return tasks.load(in_paths, extracted_path, temp_dir)
+            logger.info(f"Uploading raw dataset to '{s3_uri}'")
 
-    extract_res = extract()
-    transform_res = transform(extract_res)
-    normalize_res = normalize(transform_res)
-    load(normalize_res, extract_res)
+            pl.scan_csv(df_path).sink_parquet(s3_uri, storage_options=storage_options)
+
+            logger.info(f"Succesfully uploaded raw dataset to '{s3_uri}'")
+
+        return s3_uri
+
+    extract_from_kaggle = extract_from_kaggle()
+
+    end = EmptyOperator(task_id="end")
+
+    chain(start, extract_from_kaggle, end)
 
 
-data_ingestion()
+catalogue_ingestion_etl()
