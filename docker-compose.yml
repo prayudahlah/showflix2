@@ -12,6 +12,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-apiserver:8080/execution/"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
+  env_file:
+    - ./garage/.env.garage
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
@@ -21,8 +23,8 @@ x-airflow-common: &airflow-common
   depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
-    garage:
-      condition: service_healthy
+    garage-init:
+      condition: service_completed_successfully
   restart: unless-stopped
 
 services:
@@ -36,7 +38,7 @@ services:
       POSTGRES_AIRFLOW_USER: ${POSTGRES_AIRFLOW_USER}
       POSTGRES_AIRFLOW_PASSWORD: ${POSTGRES_AIRFLOW_PASSWORD}
     volumes:
-      - /mnt/docker-data/showflix2/postgres:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql
       - ./db/postgres/init:/docker-entrypoint-initdb.d
     ports:
       - ${POSTGRES_PORT}:5432
@@ -55,14 +57,12 @@ services:
     image: dxflrs/garage:v2.2.0
     restart: unless-stopped
     ports:
-      - "3900:3900" # S3 API
-      - "3901:3901" # RPC (internal communication)
-      - "3902:3902" # S3 Web (static website hosting)
-      - "3903:3903" # Admin API
+      - 3900:3900 # S3 API
+      - 3901:3901 # RPC (internal communication)
+      - 3903:3903 # Admin API
     environment:
       - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
-      - GARAGE_METRICS_TOKEN=${GARAGE_METRICS_TOKEN}
     volumes:
       - ./garage/garage.toml:/etc/garage.toml:ro
       - ./garage/meta:/var/lib/garage/meta
@@ -73,6 +73,40 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  garage-init:
+    image: garage_admin_tools:v2.2.0
+    build:
+      context: ./garage/garage-admin-tools
+      dockerfile: Dockerfile
+    restart: no
+    environment:
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      - GARAGE_ADMIN_API=${GARAGE_ADMIN_API:-http://garage:3903}
+      - GARAGE_NODE_CAPACITY=${GARAGE_NODE_CAPACITY:-1000000000}
+      - GARAGE_BUCKET_NAME=${GARAGE_BUCKET_NAME:-catalogue-ingestion-etl}
+    volumes:
+      - ./garage:/mnt/garage
+    entrypoint: ["/bin/sh", "/usr/local/bin/garage-init.sh"]
+    depends_on:
+      garage:
+        condition: service_healthy
+
+  garage-webui:
+    image: khairul169/garage-webui:1.1.0
+    container_name: garage-webui
+    restart: unless-stopped
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+    ports:
+      - 3909:3909
+    environment:
+      - API_BASE_URL=http://garage:3903
+      - S3_ENDPOINT_URL=http://garage:3900
+      - API_ADMIN_KEY=${GARAGE_ADMIN_TOKEN}
+    depends_on:
+      garage-init:
+        condition: service_completed_successfully
 
   airflow-apiserver:
     <<: *airflow-common
@@ -243,3 +277,7 @@ services:
       - airflow
     depends_on:
       <<: *airflow-common-depends-on
+
+
+volumes:
+  postgres_data:
