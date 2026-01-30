@@ -148,10 +148,7 @@ RESPONSE=$(
         -H "Content-Type: application/json" \
         -d @- <<EOF
 {
-    "localAlias": {
-        "accessKeyId": "$ACCESS_KEY_ID",
-        "alias": "$GARAGE_BUCKET_NAME"
-    }
+    "globalAlias": "$GARAGE_BUCKET_NAME"
 }
 EOF
 )
@@ -165,4 +162,37 @@ if [ "$HTTP_STATUS" -ne 200 ]; then
     exit 1
 fi
 
+BUCKET_ID=$(echo "$BODY" | jq -r ".id")
+
 echo "Succesfully created bucket with local alias: $GARAGE_BUCKET_NAME."
+
+# Give bucket permissions to access key
+echo "Giving bucket permissions to access key..."
+
+RESPONSE=$(
+    curl -s -w "\n%{http_code}" -X POST "$GARAGE_ADMIN_API/v2/AllowBucketKey" \
+        -H "Authorization: Bearer $GARAGE_ADMIN_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d @- <<EOF
+{
+    "accessKeyId": "$ACCESS_KEY_ID",
+    "bucketId": "$BUCKET_ID",
+    "permissions": {
+        "owner": true,
+        "read": true,
+        "write": true
+    } 
+}
+EOF
+)
+
+HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+BODY=$(echo "$RESPONSE" | sed '$d')
+
+if [ "$HTTP_STATUS" -ne 200 ]; then
+    echo "Failed to give bucket permissions to access key. HTTP Status: $HTTP_STATUS"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo "Succesfully given bucket permissions to access key."
