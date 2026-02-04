@@ -1,5 +1,11 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+: "${POSTGRES_USER:?}"
+: "${POSTGRES_DB:?}"
+: "${POSTGRES_AIRFLOW_DB:?}"
+: "${POSTGRES_AIRFLOW_USER:?}"
+: "${POSTGRES_AIRFLOW_PASSWORD:?}"
 
 # airflow metadata
 psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" <<-EOSQL
