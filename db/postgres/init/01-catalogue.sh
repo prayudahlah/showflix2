@@ -14,12 +14,12 @@ PRODUCTION_COMPANY_NAMESPACE=e47367bc-4f93-5f5c-8a02-c07a29087a1e
 # Catalogue schema ddl
 psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" <<-EOSQL
     ---- Catalogue Schema
-    CREATE SCHEMA IF NOT EXISTS catalogue;
+    CREATE SCHEMA catalogue;
 
     ---- UUIDv5 Converter Functions
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION "uuid-ossp";
 
-    CREATE OR REPLACE FUNCTION get_genre_id(
+    CREATE FUNCTION get_genre_id(
         genre_name VARCHAR(255)
     )
     RETURNS UUID
@@ -30,7 +30,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         SELECT uuid_generate_v5('${GENRE_NAMESPACE}'::UUID, genre_name);
     \$\$;
 
-    CREATE OR REPLACE FUNCTION get_region_id(
+    CREATE FUNCTION get_region_id(
         region_name text
     )
     RETURNS UUID
@@ -41,7 +41,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         SELECT uuid_generate_v5('${REGION_NAMESPACE}'::UUID, region_name);
     \$\$;
 
-    CREATE OR REPLACE FUNCTION get_language_id(
+    CREATE FUNCTION get_language_id(
         language_name text
     )
     RETURNS UUID
@@ -52,7 +52,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         SELECT uuid_generate_v5('${LANGUAGE_NAMESPACE}'::UUID, language_name);
     \$\$;
 
-    CREATE OR REPLACE FUNCTION get_production_company_id(
+    CREATE FUNCTION get_production_company_id(
         production_company_name text
     )
     RETURNS UUID
@@ -67,7 +67,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
     CREATE TYPE show_status_enum AS ENUM ('Post Production', 'Canceled', 'Released', 'Planned', 'In Production', 'Rumored');
 
     ---- Catalogue Tables
-    CREATE TABLE IF NOT EXISTS catalogue.genres (
+    CREATE TABLE catalogue.genres (
         genre_id UUID GENERATED ALWAYS AS (
             get_genre_id(genre_name)
         ) STORED PRIMARY KEY,
@@ -75,7 +75,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
             CONSTRAINT genres_genre_name_uq UNIQUE
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.regions (
+    CREATE TABLE catalogue.regions (
         region_id UUID GENERATED ALWAYS AS (
             get_region_id(region_name)
         ) STORED PRIMARY KEY,
@@ -83,7 +83,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
             CONSTRAINT regions_region_name_uq UNIQUE
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.languages (
+    CREATE TABLE catalogue.languages (
         language_id UUID GENERATED ALWAYS AS (
             get_language_id(language_name)
         ) STORED PRIMARY KEY,
@@ -91,7 +91,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
             CONSTRAINT languages_language_name_uq UNIQUE
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.production_companies (
+    CREATE TABLE catalogue.production_companies (
         production_company_id UUID GENERATED ALWAYS AS (
             get_production_company_id(production_company_name)
         ) STORED PRIMARY KEY,
@@ -121,7 +121,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         keywords          TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.show_genres (
+    CREATE TABLE catalogue.show_genres (
         show_id BIGINT NOT NULL
             REFERENCES catalogue.shows,
         genre_id UUID NOT NULL
@@ -129,7 +129,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         PRIMARY KEY (show_id, genre_id)
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.show_production_companies (
+    CREATE TABLE catalogue.show_production_companies (
         show_id BIGINT NOT NULL
             REFERENCES catalogue.shows,
         production_company_id UUID NOT NULL
@@ -137,7 +137,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         PRIMARY KEY (show_id, production_company_id)
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.show_production_regions (
+    CREATE TABLE catalogue.show_production_regions (
         show_id BIGINT NOT NULL
             REFERENCES catalogue.shows,
         region_id UUID NOT NULL
@@ -145,7 +145,7 @@ psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" 
         PRIMARY KEY (show_id, region_id)
     );
 
-    CREATE TABLE IF NOT EXISTS catalogue.show_spoken_languages (
+    CREATE TABLE catalogue.show_spoken_languages (
         show_id BIGINT NOT NULL
             REFERENCES catalogue.shows,
         language_id UUID NOT NULL
