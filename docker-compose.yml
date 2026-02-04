@@ -12,6 +12,11 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-apiserver:8080/execution/"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
+    AIRFLOW_TEMP_DIR: "/opt/airflow/tmp"
+    BUCKET_NAME: ${BUCKET_NAME}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL}
+    AWS_ALLOW_HTTP: ${AWS_ALLOW_HTTP}
   env_file:
     - ./garage/.env.garage
   volumes:
@@ -84,7 +89,7 @@ services:
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
       - GARAGE_ADMIN_API=${GARAGE_ADMIN_API:-http://garage:3903}
       - GARAGE_NODE_CAPACITY=${GARAGE_NODE_CAPACITY:-1000000000}
-      - GARAGE_BUCKET_NAME=${GARAGE_BUCKET_NAME:-catalogue-ingestion-etl}
+      - BUCKET_NAME=${BUCKET_NAME:-catalogue-ingestion-etl}
     volumes:
       - ./garage:/mnt/garage
     entrypoint: ["/bin/sh", "/usr/local/bin/garage-init.sh"]

@@ -133,8 +133,8 @@ ACCESS_KEY_ID=$(echo "$BODY" | jq -r ".accessKeyId")
 SECRET_ACCESS_KEY=$(echo "$BODY" | jq -r ".secretAccessKey")
 
 # Write to .env.garage
-echo "GARAGE_ACCESS_KEY_ID=$ACCESS_KEY_ID" >"$GARAGE_ENV_PATH"
-echo "GARAGE_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY" >>"$GARAGE_ENV_PATH"
+echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY_ID" >"$GARAGE_ENV_PATH"
+echo "AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY" >>"$GARAGE_ENV_PATH"
 
 echo "Succefully created access key."
 echo "Access key id and secret access key written to ./garage/.env.garage"
@@ -148,7 +148,7 @@ RESPONSE=$(
         -H "Content-Type: application/json" \
         -d @- <<EOF
 {
-    "globalAlias": "$GARAGE_BUCKET_NAME"
+    "globalAlias": "$BUCKET_NAME"
 }
 EOF
 )
@@ -164,7 +164,7 @@ fi
 
 BUCKET_ID=$(echo "$BODY" | jq -r ".id")
 
-echo "Succesfully created bucket with local alias: $GARAGE_BUCKET_NAME."
+echo "Succesfully created bucket with local alias: $BUCKET_NAME."
 
 # Give bucket permissions to access key
 echo "Giving bucket permissions to access key..."
